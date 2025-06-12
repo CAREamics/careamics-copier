@@ -1,0 +1,245 @@
+# TODO: Simple:
+# - BMZ
+
+# TODO Advanced:
+# - Model checkpoint
+# - Logging
+# - structN2V
+
+welcome_message:
+  type: str
+  help: |
+    👋 Welcome to the CAREamics experiment generator!
+
+    This will set up your experiment, by building a configuration file and a python script for your CAREamics project.
+
+    Press ENTER to continue.
+  default: ""
+
+mode:
+  help: "Which mode would you like to use?"
+  type: str
+  default: simple
+  choices:
+    Simple - basic options: simple
+    Advanced - loads of options: advanced
+
+experiment_name:
+  help: "What is the name of your CAREamics experiment? (no spaces, no special characters)"
+  type: str
+  default: my_experiment
+validator: "{{ 'Experiment name must not contain spaces or special characters' if not experiment_name.isidentifier() else None }}"
+
+#########################################
+# Algorithm Selection
+#########################################
+algorithm_message:
+  type: str
+  help: |
+    🧪 Let's turn to the Algorithm first. 
+
+    Here are a list of available algorithms:
+
+    - **Noise2Void (n2v)** and **N2V2 (n2v2)** do not require ground-truth images.
+    - **Noise2Noise (n2n)** requires pairs of noisy images, of which some will be considered "ground-truth".
+    - **CARE** requires pairs of noisy and clean images.
+
+    Press ENTER to continue.
+  default: ""
+
+algorithm:
+  help: "Which algorithm would you like to use?"
+  type: str
+  default: Noise2Void
+  choices:
+    Noise2Void - No ground-truth needed: n2v
+    N2V2 - No ground-truth needed: n2v2
+    Noise2Noise - Need pairs of noisy imagees: n2n
+    CARE - Need pairs of noisy and clean images: care
+
+# TODO add structN2V option
+
+#########################################
+# Data Selection
+#########################################
+
+data_message:
+  type: str
+  help: |
+    📂 Now let's talk about your data.
+
+    You can choose between Zarr and Tiff formats, and can point to a folder containing
+    your training data or to a file directly.
+
+    Please note that if you choose CARE or Noise2Noise, you will need to provide a 
+    path to ground truth data as well.
+
+    Press ENTER to continue.
+  default: ""
+
+data_format:
+  help: "What is the format of your data?"
+  type: str
+  default: tiff
+  choices:
+    zarr - Zarr files: zarr
+    tiff - Tiff files: tiff
+
+data_path:
+  help: "Where is your input training data located? (e.g. /path/to/data)"
+  type: str
+  default: None
+
+# if N2N or CARE
+ground_truth_path:
+  help: "Where is your ground truth data located? (e.g. /path/to/ground_truth)"
+  type: str
+  default: None
+  when: "algorithm == 'N2N' or algorithm == 'CARE'"
+  validator: "{{ 'Input and ground-truth paths must be different' if data_path == ground_truth_path }}"
+
+axes:
+  help: "What are the axes of your data? (e.g. 'ZYX' or `ZYXC`, allowed values are 'STCZYX' in any order)"
+  type: str
+  default: YX
+
+# if there is a channel dimension
+n_input_channels:
+  help: "How many input channels do you have? (e.g. 2)"
+  type: int
+  default: 1
+  when: "'C' in axes"
+
+# if there is a channel dimension and CARE or N2N
+n_output_channels:
+  help: "How many output channels do you have? (e.g. 1)"
+  type: int
+  default: 1
+  when:
+    - "'C' in axes"
+    - "algorithm == 'N2N' or algorithm == 'CARE'"
+
+# if there is a channel dimension
+independent_channels:
+  help: "Do you want to treat the channels independently? (yes/no)"
+  type: bool
+  default: True
+  when: "'C' in axes"
+
+########### Advanced Options ###########
+
+augmentations_message:
+  type: str
+  help: |
+    🔧 Now let's configure the augmentations.
+
+    Press ENTER to continue.
+  default: ""
+  when: "mode == 'advanced'"
+
+flip_x:
+  help: "Do you want to apply horizontal flips? (yes/no)"
+  type: bool
+  default: True
+  when: "mode == 'advanced'"
+
+flip_y:
+  help: "Do you want to apply vertical flips? (yes/no)"
+  type: bool
+  default: True
+  when: "mode == 'advanced'"
+
+rot_90:
+  help: "Do you want to apply 90° rotations? (yes/no)"
+  type: bool
+  default: True
+  when: "mode == 'advanced'"
+
+#########################################
+# Other parameters
+#########################################
+
+params_message:
+  type: str
+  help: |
+    ⚙️ Almost there, just a few important parameters!
+
+    Press ENTER to continue.
+  default: ""
+
+xy_patch_size:
+  help: "What is the patch size in YX? (e.g. 64, 128, 256)"
+  type: int
+  default: 128
+
+z_patch_size:
+  help: "What is the patch size in Z? (e.g. 8, 16)"
+  type: int
+  default: 8
+  when: "'Z' in axes"
+
+batch_size:
+  help: "What is the batch size? (e.g. 2, 8, 16, 32)"
+  type: int
+  default: 8
+
+n_epochs:
+  help: "How many epochs do you want to train for? (e.g. 20, 50)"
+  type: int
+  default: 50
+
+#########################################
+# Prediction
+#########################################
+
+prediction_message:
+  type: str
+  help: |
+    🖼️ Finally, let's set up the prediction parameters.
+
+    Note that axes in the data are expected to be the same as in the training data.
+
+    Press ENTER to continue.
+  default: ""
+
+should_predict:
+  help: "Do you want to run a prediction after training? (yes/no)"
+  type: bool
+  default: True
+
+prediction_path:
+  help: "Where is the data you want to predict on located? (e.g. /path/to/prediction_data)"
+  type: str
+  default: None
+  when: "should_predict"
+
+should_tile:
+  help: "Do you want to tile the prediction? (yes/no)"
+  type: bool
+  default: True
+  when: "should_predict"
+
+tile_size:
+  help: "What is the tile size for prediction? (e.g. 128, 256)"
+  type: int
+  default: 256
+  when: "should_predict and should_tile"
+
+overlaps:
+  help: "What is the overlap for tiling? (e.g. 48, 64)"
+  type: int
+  default: 48
+  when: "should_predict and should_tile and mode == 'advanced'"
+
+##################### The end
+
+# Final message
+final_message:
+  type: str
+  help: |
+    🎉 All done! 
+
+    Your experiment is now set up. You can find the python script in the current directory.
+
+    Press ENTER to finish.
+  default: ""
