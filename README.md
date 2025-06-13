@@ -16,6 +16,7 @@
 ## How to use CAREamics copier template
 
 ```
+pip install copier black
 copier copy gh:CAREamics/careamics-copier my_project_name
 ```
 

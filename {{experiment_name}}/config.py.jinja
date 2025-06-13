@@ -5,73 +5,73 @@ from pathlib import Path
 
 from careamics.config import (
     save_configuration,
-{%-if algorithm == 'n2v' or algorithm == 'n2v2' -%}
+{% if algorithm == 'n2v' or algorithm == 'n2v2' %}
     create_n2v_configuration,
-{%-elif algorithm == 'care' -%}
+{% elif algorithm == 'care' %}
     create_care_configuration,
-{%-elif algorithm == 'n2n' -%}
+{% elif algorithm == 'n2n' %}
     create_n2n_configuration,
-{%-endif -%}
+{% endif %}
 )
 
-{%-if mode == 'advanced' and (flip_x or flip_y or rot_90) -%}
+{% if mode == 'advanced' and (flip_x or flip_y or rot_90) %}
 from careamics.config.transforms import (
-{%-if flip_x or flip_y -%}
+{% if flip_x or flip_y %}
     XYFlip,
-{%-endif -%}
-{%-if rot_90 -%}
+{% endif %}
+{% if rot_90 %}
     XYRandomRotate90Model,
-{%-endif -%}
+{% endif %}
 )
-{%-endif -%}
+{% endif %}
 
 
 def create_config() -> None:
     """ Create and save the configuration for the experiment.
     """
     try:
-        {%-if algorithm == 'n2v' or algorithm == 'n2v2' -%}
+        {% if algorithm == 'n2v' or algorithm == 'n2v2' %}
         config = create_n2v_configuration(
             experiment_name={{ experiment_name | tojson }},
             data_type={{ data_format | tojson }},
             axes={{ axes | tojson }},
             patch_size=[
-            {%-if 'Z' in axes -%}
+            {% if 'Z' in axes %}
                 {{ z_patch_size }},
-            {%-endif -%}
+            {% endif %}
                 {{ xy_patch_size }},
                 {{ xy_patch_size }}
             ],
             batch_size={{ batch_size }},
             num_epochs={{ n_epochs }},
-        {%-if algorithm == 'n2v2' -%}
+        {% if algorithm == 'n2v2' %}
             use_n2v2=True,
-        {%-endif -%}
-        {%-if mode == 'advanced' -%}
+        {% endif %}
+        {% if mode == 'advanced' %}
             augmentations=[
-            {%-if flip_x or flip_y -%}
+            {% if flip_x or flip_y %}
                 XYFlip(
                     flip_x={{ flip_x | tojson }},
                     flip_y={{ flip_y | tojson }}
                 ),
-            {%-endif -%}
-            {%-if rot_90 -%}
+            {% endif %}
+            {% if rot_90 %}
                 XYRandomRotate90Model(),
-            {%-endif -%}
+            {% endif %}
             ],
-        {%-endif -%}
-        {%-if 'C' in axes -%}
+        {% endif %}
+        {% if 'C' in axes %}
             n_channels={{ n_input_channels }},
-        {%-endif -%}
-        {%-if 'C' in axes -%}
+        {% endif %}
+        {% if 'C' in axes %}
             independent_channels={{ independent_channels }},
-        {%-endif -%}
+        {% endif %}
         )
-        {%-elif algorithm == 'care' -%}
+        {% elif algorithm == 'care' %}
         config = create_care_configuration()  # TODO
-        {%-elif algorithm == 'n2n' -%}
+        {% elif algorithm == 'n2n' %}
         config = create_n2n_configuration()  # TODO
-        {%-endif %}
+        {% endif %}
 
         # Save the configuration to a file
         save_configuration(config, Path(__file__).parent / "{{ experiment_name }}_config.yml")

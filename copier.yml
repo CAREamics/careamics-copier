@@ -308,7 +308,9 @@ _exclude:
   - ".gitignore"
   - "README.md"
   - "LICENSE"
+  - "copier.yml"
 
 ##################### Validation
-_tasks: # requires --trust flag
+tasks:
   - "python {{ experiment_name }}/config.py"
+  - "black {{ experiment_name }}"
