@@ -21,9 +21,10 @@ your own data.
 
 At the end of the process, you will have created the following files:
 ```
-experiment_name/
-├── experiment_name.py
-└── config.yaml
+my_project_name/
+└── experiment_name/
+    ├── experiment_name.py
+    └── config.yaml
 ```
 
 Where `experiment_name.py` is the main script that you can run to train and predict on your data. The `config.yaml` file contains the configuration for the experiment, which you can reuse in other contexts (e.g. with similar data).
@@ -39,6 +40,13 @@ Where `experiment_name.py` is the main script that you can run to train and pred
     ``` bash
     copier copy gh:CAREamics/careamics-copier my_project_name
     ```
+
+## Run the generated script
+
+If your paths are correct, you can simply run the generated script with:
+```bash
+python my_project_name/experiment_name/experiment_name.py
+```
 
 ## The script does not work, what should I do?
 
