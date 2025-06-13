@@ -314,4 +314,5 @@ _exclude:
 ##################### Validation
 tasks:
   - "python {{ experiment_name }}/config.py"
+  - "rm {{ experiment_name }}/config.py"
   - "black {{ experiment_name }}"

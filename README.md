@@ -19,6 +19,15 @@ your own data.
   <img src="imgs/screenshot.png">
 </p>
 
+At the end of the process, you will have created the following files:
+```
+experiment_name/
+├── experiment_name.py
+└── config.yaml
+```
+
+Where `experiment_name.py` is the main script that you can run to train and predict on your data. The `config.yaml` file contains the configuration for the experiment, which you can reuse in other contexts (e.g. with similar data).
+
 ## How to use CAREamics copier template
 
 1. Install [CAREamics](https://careamics.github.io) in an environment.
@@ -30,3 +39,9 @@ your own data.
     ``` bash
     copier copy gh:CAREamics/careamics-copier my_project_name
     ```
+
+## The script does not work, what should I do?
+
+First and foremost, make sure that the paths to your data are correct in the python script. You can modify them after the script has been generated.
+
+If you encounter any issues with the generated script, please open an [issue](https://github.com/CAREamics/careamics-copier/issues).
