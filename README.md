@@ -48,6 +48,8 @@ If your paths are correct, you can simply run the generated script with:
 python my_project_name/experiment_name/experiment_name.py
 ```
 
+Where `my_project_name` is the name you provided when running copier, and `experiment_name` is the name of the experiment you entered during the prompting process.
+
 ## The script does not work, what should I do?
 
 First and foremost, make sure that the paths to your data are correct in the python script. You can modify them after the script has been generated.
