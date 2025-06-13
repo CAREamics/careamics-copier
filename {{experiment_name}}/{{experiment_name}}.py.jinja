@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+
+import mattplotlib.pyplot as plt
+
+from careamics import CAREamist
+
+from careamics.config import (
+{% if algorithm == 'n2v' or algorithm == 'n2v2' %}
+    create_n2v_configuration,
+{% elif algorithm == 'care' %}
+    create_care_configuration,
+{% elif algorithm == 'n2n' %}
+    create_n2n_configuration,
+{% endif %}
+)
+
+{% if mode == 'advanced' and (flip_x or flip_y or rot_90) %}
+from careamics.config.transforms import (
+{% if flip_x or flip_y %}
+    XYFlip,
+{% endif %}
+{% if rot_90 %}
+    XYRandomRotate90Model,
+{% endif %}
+)
+{% endif %}
+
+def main() -> None:
+
+    ################################################################################
+    # Path to data
+    # - If you encounter issues with the script, check that the paths are correct,
+    #   with respect to the path from which you are calling the script
+    train_path = {{ data_path | tojson }}
+    {% if algorithm == 'care' or algorithm == 'n2n' %}
+    target_path = {{ target_path | tojson }}
+    {% endif %}
+    {% if use_validation %}
+    val_data_path = {{ val_data_path | tojson }}
+    {% if algorithm == 'care' or algorithm == 'n2n' %}
+    val_target_path = {{ val_target_path | tojson }}
+    {% endif %}
+    {% endif %}
+    {% if should_predict %}
+    pred_path = {{ prediction_path | tojson }}
+    output_path = {{ output_path | tojson }}
+    {% endif %}
+
+    ################################################################################
+    # Create configuration
+    {% if algorithm == 'n2v' or algorithm == 'n2v2' %}
+    config = create_n2v_configuration(
+        experiment_name={{ experiment_name | tojson }},
+        data_type={{ data_format | tojson }},
+        axes={{ axes | tojson }},
+        patch_size=[
+        {% if 'Z' in axes %}
+            {{ z_patch_size }},
+        {% endif %}
+            {{ xy_patch_size }},
+            {{ xy_patch_size }}
+        ],
+        batch_size={{ batch_size }},
+        num_epochs={{ n_epochs }},
+    {% if algorithm == 'n2v2' %}
+        use_n2v2=True,
+    {% endif %}
+    {% if mode == 'advanced' %}
+        augmentations=[
+        {% if flip_x or flip_y %}
+            XYFlip(
+                flip_x={{ flip_x | tojson }},
+                flip_y={{ flip_y | tojson }}
+            ),
+        {% endif %}
+        {% if rot_90 %}
+            XYRandomRotate90Model(),
+        {% endif %}
+        ],
+    {% endif %}
+    {% if 'C' in axes %}
+        n_channels={{ n_input_channels }},
+    {% endif %}
+    {% if 'C' in axes %}
+        independent_channels={{ independent_channels }},
+    {% endif %}
+    )
+    {% elif algorithm == 'care' %}
+    config = create_care_configuration()  # TODO
+    {% elif algorithm == 'n2n' %}
+    config = create_n2n_configuration()  # TODO
+    {% endif %}
+
+    #################################################################################
+    # Create and train the model
+    careamist = CAREamist(config)
+
+    # train the model
+    careamist.train(
+        train_source=train_path,
+    {% if algorithm == 'care' or algorithm == 'n2n' %}
+        train_target=target_path,
+    {% endif %}
+    {% if use_validation %}
+        val_source=val_path,
+    {% if algorithm == 'care' or algorithm == 'n2n' %}
+        val_target=val_target_path,
+    {% endif %}
+    {% endif %}
+    )
+
+    # save loss plot
+    losses = careamist.get_losses()
+
+    train_losses = losses.get('train_loss', [])
+    val_losses = losses.get('val_loss', [])
+    train_epochs = losses.get('train.epoch', list(range(len(train_losses))))
+    val_epochs = losses.get('val.epoch', list(range(len(val_losses))))
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(train_epochs, train_losses, label='Training Loss')
+    plt.plot(val_epochs, val_losses, label='Validation Loss', linestyle='--')
+
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('loss_plot.png')
+
+    {% if should_predict %}
+    ##################################################################################
+    # Predict
+    careamist.predict_to_disk(
+        source=pred_path,
+        prediction_dir=output_path,
+    {% if should_tile %}
+        tile_size=[
+    {% if 'Z' in axes %}
+            {{ z_tile_size }},
+    {% endif %}
+            {{ xy_tile_size | tojson }},
+            {{ xy_tile_size | tojson }}
+        ],
+        tile_overlap=[
+    {% if 'Z' in axes %}
+            {{ z_overlap }},
+    {% endif %}
+            {{ xy_overlap | tojson }},
+            {{ xy_overlap | tojson }}
+        ]
+    {% endif %}
+    )
+    {% endif %}
+
+if __name__ == "__main__":
+    main()

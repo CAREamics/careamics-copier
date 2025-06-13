@@ -9,9 +9,13 @@
 welcome_message:
   type: str
   help: |
-    👋 Welcome to the CAREamics experiment generator!
+    Welcome to the CAREamics experiment generator!
 
-    This will set up your experiment, by building a configuration file and a python script for your CAREamics project.
+    This will set up your experiment, by building a configuration file and a python
+    script for your CAREamics project.
+
+    Before starting, make sure that you have your data organised in separate folders or
+    files, and that you know the axes of your data.
 
     Press ENTER to continue.
   default: ""
@@ -25,10 +29,13 @@ mode:
     Advanced - loads of options: advanced
 
 experiment_name:
-  help: "What is the name of your CAREamics experiment? (no spaces, no special characters)"
+  help: "What is the name of your CAREamics experiment? (no spaces, no special characters except underscores)"
   type: str
   default: my_experiment
-validator: "{{ 'Experiment name must not contain spaces or special characters' if not experiment_name.isidentifier() else None }}"
+  validator: >
+    {% if not experiment_name.isidentifier() %}
+      Experiment name must only contain letters, digits, or underscores, and not start with a digit.
+    {% endif %}
 
 #########################################
 # Algorithm Selection
@@ -36,13 +43,13 @@ validator: "{{ 'Experiment name must not contain spaces or special characters' i
 algorithm_message:
   type: str
   help: |
-    🧪 Let's turn to the Algorithm first. 
+    Let's turn to the Algorithm first. 
 
     Here are a list of available algorithms:
 
-    - **Noise2Void (n2v)** and **N2V2 (n2v2)** do not require ground-truth images.
-    - **Noise2Noise (n2n)** requires pairs of noisy images, of which some will be considered "ground-truth".
-    - **CARE** requires pairs of noisy and clean images.
+    - Noise2Void and N2V2 do not require ground-truth images.
+    - Noise2Noise requires pairs of noisy images, of which some will be considered "ground-truth".
+    - CARE requires pairs of noisy and clean images.
 
     Press ENTER to continue.
   default: ""
@@ -66,13 +73,13 @@ algorithm:
 data_message:
   type: str
   help: |
-    📂 Now let's talk about your data.
+    Now let's talk about your data.
 
     You can choose between Zarr and Tiff formats, and can point to a folder containing
     your training data or to a file directly.
 
     Please note that if you choose CARE or Noise2Noise, you will need to provide a 
-    path to ground truth data as well.
+    path to ground truth or target data as well.
 
     Press ENTER to continue.
   default: ""
@@ -88,15 +95,44 @@ data_format:
 data_path:
   help: "Where is your input training data located? (e.g. /path/to/data)"
   type: str
-  default: None
+  default: /path/to/data
 
 # if N2N or CARE
-ground_truth_path:
-  help: "Where is your ground truth data located? (e.g. /path/to/ground_truth)"
+target_path:
+  help: "Where is your ground truth / target data located? (e.g. /path/to/ground_truth)"
   type: str
-  default: None
-  when: "algorithm == 'N2N' or algorithm == 'CARE'"
-  validator: "{{ 'Input and ground-truth paths must be different' if data_path == ground_truth_path }}"
+  default: /path/to/data
+  when: "{{ algorithm == 'n2n' or algorithm == 'care' }}"
+  validator: >
+    {% if data_path == target_path %}
+      Input and ground-truth / target paths must be different.
+    {% endif %}
+
+use_validation:
+  help: "Do you want to use a separate validation set?"
+  type: bool
+  default: True
+
+val_data_path:
+  help: "Where is your validation data located? (e.g. /path/to/validation_data)"
+  type: str
+  default: /path/to/data
+  when: "{{ use_validation }}"
+  validator: >
+    {% if data_path == val_data_path %}
+      Training and validation paths must be different.
+    {% endif %}
+
+# if separate validation set and N2N or CARE
+val_target_path:
+  help: "Where is your validation ground truth / target data located? (e.g. /path/to/validation_ground_truth)"
+  type: str
+  default: /path/to/data
+  when: "{{ use_validation and (algorithm == 'n2n' or algorithm == 'care') }}"
+  validator: >
+    {% if val_data_path == val_target_path %}
+      Validation input and ground-truth paths must be different.
+    {% endif %}
 
 axes:
   help: "What are the axes of your data? (e.g. 'ZYX' or `ZYXC`, allowed values are 'STCZYX' in any order)"
@@ -108,52 +144,50 @@ n_input_channels:
   help: "How many input channels do you have? (e.g. 2)"
   type: int
   default: 1
-  when: "'C' in axes"
+  when: "{{ 'C' in axes }}"
 
 # if there is a channel dimension and CARE or N2N
 n_output_channels:
   help: "How many output channels do you have? (e.g. 1)"
   type: int
   default: 1
-  when:
-    - "'C' in axes"
-    - "algorithm == 'N2N' or algorithm == 'CARE'"
+  when: "{{ 'C' in axes and (algorithm == 'n2n' or algorithm == 'care') }}"
 
 # if there is a channel dimension
 independent_channels:
-  help: "Do you want to treat the channels independently? (yes/no)"
+  help: "Do you want to treat the channels independently?"
   type: bool
   default: True
-  when: "'C' in axes"
+  when: "{{ 'C' in axes }}"
 
 ########### Advanced Options ###########
 
 augmentations_message:
   type: str
   help: |
-    🔧 Now let's configure the augmentations.
+    Now let's configure the augmentations.
 
     Press ENTER to continue.
   default: ""
-  when: "mode == 'advanced'"
+  when: "{{ mode == 'advanced' }}"
 
 flip_x:
   help: "Do you want to apply horizontal flips? (yes/no)"
   type: bool
   default: True
-  when: "mode == 'advanced'"
+  when: "{{ mode == 'advanced' }}"
 
 flip_y:
   help: "Do you want to apply vertical flips? (yes/no)"
   type: bool
   default: True
-  when: "mode == 'advanced'"
+  when: "{{ mode == 'advanced' }}"
 
 rot_90:
   help: "Do you want to apply 90° rotations? (yes/no)"
   type: bool
   default: True
-  when: "mode == 'advanced'"
+  when: "{{ mode == 'advanced' }}"
 
 #########################################
 # Other parameters
@@ -162,13 +196,13 @@ rot_90:
 params_message:
   type: str
   help: |
-    ⚙️ Almost there, just a few important parameters!
+    Almost there, just a few important parameters!
 
     Press ENTER to continue.
   default: ""
 
 xy_patch_size:
-  help: "What is the patch size in YX? (e.g. 64, 128, 256)"
+  help: "What is the patch size in XY? (e.g. 64, 128, 256)"
   type: int
   default: 128
 
@@ -176,7 +210,7 @@ z_patch_size:
   help: "What is the patch size in Z? (e.g. 8, 16)"
   type: int
   default: 8
-  when: "'Z' in axes"
+  when: "{{ 'Z' in axes }}"
 
 batch_size:
   help: "What is the batch size? (e.g. 2, 8, 16, 32)"
@@ -195,7 +229,7 @@ n_epochs:
 prediction_message:
   type: str
   help: |
-    🖼️ Finally, let's set up the prediction parameters.
+    Finally, let's set up the prediction parameters.
 
     Note that axes in the data are expected to be the same as in the training data.
 
@@ -203,33 +237,55 @@ prediction_message:
   default: ""
 
 should_predict:
-  help: "Do you want to run a prediction after training? (yes/no)"
+  help: "Do you want to run a prediction after training?"
   type: bool
   default: True
 
 prediction_path:
   help: "Where is the data you want to predict on located? (e.g. /path/to/prediction_data)"
   type: str
-  default: None
-  when: "should_predict"
+  default: /path/to/data
+  when: "{{ should_predict }}"
 
 should_tile:
-  help: "Do you want to tile the prediction? (yes/no)"
+  help: "Do you want to tile the prediction?"
   type: bool
   default: True
-  when: "should_predict"
+  when: "{{ should_predict }}"
 
-tile_size:
-  help: "What is the tile size for prediction? (e.g. 128, 256)"
+xy_tile_size:
+  help: "What is the XY tile size for prediction? (e.g. 128, 256)"
   type: int
   default: 256
-  when: "should_predict and should_tile"
+  when: "{{ should_predict and should_tile }}"
 
-overlaps:
-  help: "What is the overlap for tiling? (e.g. 48, 64)"
+z_tile_size:
+  help: "What is the Z tile size for prediction? (e.g. 8, 16)"
+  type: int
+  default: 8
+  when: "{{ 'Z' in axes and should_predict and should_tile }}"
+
+xy_overlap:
+  help: "What is the XY overlap for tiling? (e.g. 48, 64)"
   type: int
   default: 48
-  when: "should_predict and should_tile and mode == 'advanced'"
+  when: "{{ should_predict and should_tile and mode == 'advanced' }}"
+
+z_overlap:
+  help: "What is the Z overlap for tiling? (e.g. 4, 8)"
+  type: int
+  default: 4
+  when: "{{ 'Z' in axes and should_predict and should_tile and mode == 'advanced' }}"
+
+output_path:
+  help: "Where do you want to save the prediction results? (e.g. /path/to/output)"
+  type: str
+  default: /path/to/output
+  when: "{{ should_predict }}"
+  validator: >
+    {% if prediction_path == output_path %}
+      Prediction output path must be different from prediction input path.
+    {% endif %}
 
 ##################### The end
 
@@ -237,9 +293,22 @@ overlaps:
 final_message:
   type: str
   help: |
-    🎉 All done! 
+    All done! 
 
-    Your experiment is now set up. You can find the python script in the current directory.
+    Your experiment is now set up. We will perform one last validation step to ensure that
+    the configuration is correct, then the files will be generated.
 
     Press ENTER to finish.
   default: ""
+
+#################### Exclude
+_exclude:
+  - "scripts/validate_config.py"
+  - ".git"
+  - ".gitignore"
+  - "README.md"
+  - "LICENSE"
+
+##################### Validation
+_tasks: # requires --trust flag
+  - "python {{ experiment_name }}/config.py"

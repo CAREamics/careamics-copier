@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+
+import sys
+from pathlib import Path
+
+from careamics.config import (
+    save_configuration,
+{%-if algorithm == 'n2v' or algorithm == 'n2v2' -%}
+    create_n2v_configuration,
+{%-elif algorithm == 'care' -%}
+    create_care_configuration,
+{%-elif algorithm == 'n2n' -%}
+    create_n2n_configuration,
+{%-endif -%}
+)
+
+{%-if mode == 'advanced' and (flip_x or flip_y or rot_90) -%}
+from careamics.config.transforms import (
+{%-if flip_x or flip_y -%}
+    XYFlip,
+{%-endif -%}
+{%-if rot_90 -%}
+    XYRandomRotate90Model,
+{%-endif -%}
+)
+{%-endif -%}
+
+
+def create_config() -> None:
+    """ Create and save the configuration for the experiment.
+    """
+    try:
+        {%-if algorithm == 'n2v' or algorithm == 'n2v2' -%}
+        config = create_n2v_configuration(
+            experiment_name={{ experiment_name | tojson }},
+            data_type={{ data_format | tojson }},
+            axes={{ axes | tojson }},
+            patch_size=[
+            {%-if 'Z' in axes -%}
+                {{ z_patch_size }},
+            {%-endif -%}
+                {{ xy_patch_size }},
+                {{ xy_patch_size }}
+            ],
+            batch_size={{ batch_size }},
+            num_epochs={{ n_epochs }},
+        {%-if algorithm == 'n2v2' -%}
+            use_n2v2=True,
+        {%-endif -%}
+        {%-if mode == 'advanced' -%}
+            augmentations=[
+            {%-if flip_x or flip_y -%}
+                XYFlip(
+                    flip_x={{ flip_x | tojson }},
+                    flip_y={{ flip_y | tojson }}
+                ),
+            {%-endif -%}
+            {%-if rot_90 -%}
+                XYRandomRotate90Model(),
+            {%-endif -%}
+            ],
+        {%-endif -%}
+        {%-if 'C' in axes -%}
+            n_channels={{ n_input_channels }},
+        {%-endif -%}
+        {%-if 'C' in axes -%}
+            independent_channels={{ independent_channels }},
+        {%-endif -%}
+        )
+        {%-elif algorithm == 'care' -%}
+        config = create_care_configuration()  # TODO
+        {%-elif algorithm == 'n2n' -%}
+        config = create_n2n_configuration()  # TODO
+        {%-endif %}
+
+        # Save the configuration to a file
+        save_configuration(config, Path(__file__).parent / "{{ experiment_name }}_config.yml")
+    except Exception as e:
+        print(f"Error creating configuration: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print("Configuration created successfully.")
+    return 0
+
+if __name__ == "__main__":
+    create_config()
