@@ -11,12 +11,22 @@
 [![Python Version](https://img.shields.io/pypi/pyversions/careamics.svg?color=green)](https://python.org)
 [![Image.sc](https://img.shields.io/badge/Got%20a%20question%3F-Image.sc-blue)](https://forum.image.sc/)
 
+The CAREamics copier template helps you build CAREamics scripts using intuitive prompting
+in the console. The output is Python script that you can run to train and predict on 
+your own data.
 
+<p align="center">
+  <img src="imgs/screenshot.png">
+</p>
 
 ## How to use CAREamics copier template
 
-```
-pip install copier black
-copier copy gh:CAREamics/careamics-copier my_project_name
-```
-
+1. Install [CAREamics](https://careamics.github.io) in an environment.
+2. Install [copier](https://copier.readthedocs.io/en/stable/) and black.
+    ``` bash
+    pip install copier black
+    ```
+3. Run copier with the CAREamics template.
+    ``` bash
+    copier copy gh:CAREamics/careamics-copier my_project_name
+    ```

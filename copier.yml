@@ -309,6 +309,7 @@ _exclude:
   - "README.md"
   - "LICENSE"
   - "copier.yml"
+  - "imgs"
 
 ##################### Validation
 tasks:
